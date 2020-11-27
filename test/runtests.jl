@@ -17,14 +17,14 @@ testlogpdf(x :: Array{Tuple{Float64, Normal{Float64}}, 1}, y :: Number) = log(te
 testcdf(x :: Array{Tuple{Float64, Normal{Float64}}, 1}, y :: Number) = foldl((l, (w, d)) -> l + w * cdf(d, y), x, init = 0)
 
 convexSamplers = [
-(target, n) -> drawn(ARS(), ARSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0, n),
-(target, n) -> drawn(ARMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0, n),
-(target, n) -> drawn(IA2RMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0, n),
+(target, n) -> drawn(ARS(), ARSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0.0, n),
+(target, n) -> drawn(ARMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0.0, n),
+(target, n) -> drawn(IA2RMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0.0, n),
 ]
 
 nonConvexSamplers = [
-(target, n) -> drawn(ARMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0, n),
-(target, n) -> drawn(IA2RMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0, n)
+(target, n) -> drawn(ARMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0.0, n),
+(target, n) -> drawn(IA2RMS(), ARMSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0.0, n)
 ]
 
 convexTest = map(convexTargets) do target

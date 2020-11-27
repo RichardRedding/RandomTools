@@ -5,18 +5,18 @@ struct BoundedLogLinear
 end
 
 struct PiecewiseLogLinearDensityProposal
-    dist :: Array{NamedTuple{(:m, :d), Tuple{Float64, BoundedLogLinear}}}
+    dist :: Array{NamedTuple{(:m, :d), Tuple{Float64, BoundedLogLinear}}, 1}
 end
 
-function logpdf(d :: BoundedLogLinear, x :: Number) :: Float64
+function logpdf(d :: BoundedLogLinear, x :: Float64) :: Float64
     abs(d.slope) > 0 ? x * d.slope + log(abs(d.slope)) - log(abs(exp(d.slope * d.upper) - exp(d.slope * d.lower))) : -log(d.upper - d.lower)
 end
 
-function quantile(d :: BoundedLogLinear, q :: Number) :: Float64
+function quantile(d :: BoundedLogLinear, q :: Float64) :: Float64
     abs(d.slope) > 0 ? log(q * (exp(d.slope * d.upper) - exp(d.slope * d.lower)) + exp(d.slope * d.lower)) / d.slope : d.lower + q * (d.upper - d.lower)
 end
 
-function cdf(d :: BoundedLogLinear, x :: Number) :: Float64
+function cdf(d :: BoundedLogLinear, x :: Float64) :: Float64
     abs(d.slope) > 0 ? (exp(d.slope * x) - exp(d.slope * d.lower)) / (exp(d.slope * d.upper) - exp(d.slope * d.lower)) : (x - d.lower) / (d.upper - d.lower)
 end
 
@@ -24,15 +24,26 @@ lower(d :: PiecewiseLogLinearDensityProposal) = first(d.dist).d.lower
 
 upper(d :: PiecewiseLogLinearDensityProposal) = last(d.dist).d.upper
 
-draw(d :: PiecewiseLogLinearDensityProposal) :: Number = quantile(d, Base.rand())
+draw(d :: PiecewiseLogLinearDensityProposal) :: Float64 = quantile(d, Base.rand())
 
-findIntervalInDomain(d :: PiecewiseLogLinearDensityProposal, x :: Number) :: Int = findfirst(y -> x <= y.d.upper, d.dist)
-
-function findIntervalInCodomain(d :: PiecewiseLogLinearDensityProposal, p :: Number) :: Int
-    findfirst(x -> x.m == Inf || p * last(d.dist).m <= x.m, d.dist)
+function findfirstOrElse(predicate :: Function, xs :: AbstractArray{T, 1}, orElse :: Int) :: Int where {T}
+    continue_ = true
+    i = 0
+    n = length(xs)
+    while continue_ && i < n
+        i += 1
+        continue_ = !predicate(xs[i])
+    end
+    continue_ ? orElse : i
 end
 
-function logmpdf(d :: PiecewiseLogLinearDensityProposal, x :: Number) :: Float64
+findIntervalInDomain(d :: PiecewiseLogLinearDensityProposal, x :: Float64) :: Int = findfirstOrElse(y -> x <= y.d.upper, d.dist, 0)
+
+function findIntervalInCodomain(d :: PiecewiseLogLinearDensityProposal, p :: Float64) :: Int
+    findfirstOrElse(x -> x.m == Inf || p * last(d.dist).m <= x.m, d.dist, 0)
+end
+
+function logmpdf(d :: PiecewiseLogLinearDensityProposal, x :: Float64) :: Float64
     if lower(d) <= x && x <= upper(d)
         i = findIntervalInDomain(d, x)
         mi, di = d.dist[i]
@@ -43,9 +54,9 @@ function logmpdf(d :: PiecewiseLogLinearDensityProposal, x :: Number) :: Float64
     end
 end
 
-logpdf(d :: PiecewiseLogLinearDensityProposal, x :: Number) :: Float64 = logmpdf(d, x) - log(last(d.dist).m)
+logpdf(d :: PiecewiseLogLinearDensityProposal, x :: Float64) :: Float64 = logmpdf(d, x) - log(last(d.dist).m)
 
-function quantile(d :: PiecewiseLogLinearDensityProposal, q :: Number) :: Number
+function quantile(d :: PiecewiseLogLinearDensityProposal, q :: Float64) :: Float64
     if q <= 0
         lower(d)
     elseif q >= 1
@@ -59,7 +70,7 @@ function quantile(d :: PiecewiseLogLinearDensityProposal, q :: Number) :: Number
     end
 end
 
-function cdf(d :: PiecewiseLogLinearDensityProposal, x :: Number) :: Float64
+function cdf(d :: PiecewiseLogLinearDensityProposal, x :: Float64) :: Float64
     if x < lower(d)
         0.0
     elseif x > upper(d)

@@ -1,6 +1,6 @@
 struct ARMS <: AdaptiveSamplingRegime end
 
-function draw(r :: ARMS, d :: AdaptiveProposal, targetlogmpdf :: Function, init :: Number) :: Tuple{Number, AdaptiveProposal}
+function draw(r :: ARMS, d :: AdaptiveProposal, targetlogmpdf :: Function, init :: Float64) :: Tuple{Float64, AdaptiveProposal}
     candidate, d2, ldmtargetCandidate, ldmproposalCandidate = arsStep(d, targetlogmpdf)
     ldmtargetInit = targetlogmpdf(init)
     ldmproposalInit = logmpdf(d2, init)

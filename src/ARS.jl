@@ -2,7 +2,7 @@ using Base: rand
 
 struct ARS <: AdaptiveSamplingRegime end
 
-function arsStep(d :: AdaptiveProposal, targetlogmpdf :: Function) :: Tuple{Number, AdaptiveProposal, Float64, Float64}
+function arsStep(d :: AdaptiveProposal, targetlogmpdf :: Function) :: Tuple{Float64, AdaptiveProposal, Float64, Float64}
     accept = false
     result = 0
     ldmtargetNew = 0
@@ -18,4 +18,4 @@ function arsStep(d :: AdaptiveProposal, targetlogmpdf :: Function) :: Tuple{Numb
     (result, d, ldmtargetNew, ldmproposalNew)
 end
 
-draw(r :: ARS, d :: AdaptiveProposal, targetlogmpdf :: Function) :: Tuple{Number, AdaptiveProposal} = arsStep(d, targetlogmpdf)[1:2]
+draw(r :: ARS, d :: AdaptiveProposal, targetlogmpdf :: Function) :: Tuple{Float64, AdaptiveProposal} = arsStep(d, targetlogmpdf)[1:2]

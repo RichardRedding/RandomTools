@@ -5,9 +5,9 @@ end
 
 draw(d :: ARSProposal) :: Float64 = draw(d.dist)
 
-logmpdf(d :: ARSProposal, x :: Number) :: Float64 = logmpdf(d.dist, x)
+logmpdf(d :: ARSProposal, x :: Float64) :: Float64 = logmpdf(d.dist, x)
 
-function update(d :: ARSProposal, targetlogmpdf :: Function, x :: Number) :: ARSProposal
+function update(d :: ARSProposal, targetlogmpdf :: Function, x :: Float64) :: ARSProposal
     if !(x in d.abscissa)
         currentSize = length(d.abscissa)
         idx = (x > last(d.abscissa)) | (currentSize == 0) ? currentSize + 1 : findfirst(a -> x <= a, d.abscissa)
@@ -19,7 +19,7 @@ function update(d :: ARSProposal, targetlogmpdf :: Function, x :: Number) :: ARS
     end
 end
 
-function proposalInputsAreInvalid(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: Bool where {T <: Number, S <: Number}
+function proposalInputsAreInvalid(abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: Bool
     #Check that there are at least 3 finite abscissa within the lower and upper bounds that have a finite ordinate
     i = 0
     invalid = true
@@ -32,7 +32,7 @@ function proposalInputsAreInvalid(abscissa :: Array{T, 1}, ordinate :: Array{S, 
     invalid
 end
 
-function ProduceARSIntervalData(interval :: Int, abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: NamedTuple{(:lower, :upper, :intercept, :slope), Tuple{Number, Number, Number, Number}} where {T <: Number, S <: Number}
+function ProduceARSIntervalData(interval :: Int, abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: NamedTuple{(:lower, :upper, :intercept, :slope), Tuple{Float64, Float64, Float64, Float64}}
     numAbscissa = length(abscissa)
     numIntervals = numAbscissa < 3 ? 1 + numAbscissa : 2 * (numAbscissa - 1)
     lineIdx = max(1, min(numAbscissa - 1, 1 + ceil(Int64, interval / 2) - (interval % 2) * 2))
@@ -58,10 +58,10 @@ function ProduceARSIntervalData(interval :: Int, abscissa :: Array{T, 1}, ordina
     end
 end
 
-function ProduceARSProposalData(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: Array{NamedTuple{(:m, :d), Tuple{Number, BoundedLogLinear}}} where {T <: Number, S <: Number}
+function ProduceARSProposalData(abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: Array{NamedTuple{(:m, :d), Tuple{Float64, BoundedLogLinear}}}
     numAbscissa = length(abscissa)
     numIntervals = numAbscissa < 3 ? 1 + numAbscissa : 2 * (numAbscissa - 1)
-    proposalData = Array{NamedTuple{(:m, :d), Tuple{Number, BoundedLogLinear}}}(undef, numIntervals)
+    proposalData = Array{NamedTuple{(:m, :d), Tuple{Float64, BoundedLogLinear}}}(undef, numIntervals)
     w = 0.0
     for i in 1:numIntervals
         (l, u, intercept, slope) = ProduceARSIntervalData(i, abscissa, ordinate, lower, upper)
@@ -71,11 +71,11 @@ function ProduceARSProposalData(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}
     proposalData
 end
 
-function ARSProposalUnsafe(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: ARSProposal where {T <: Number, S <: Number}
+function ARSProposalUnsafe(abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: ARSProposal
     ARSProposal(PiecewiseLogLinearDensityProposal(ProduceARSProposalData(abscissa, ordinate, lower, upper)), abscissa)
 end
 
-function ARSProposal(abscissa :: Array{T, 1}, targetlogmpdf :: Function, lower :: T, upper :: T) :: ARSProposal where {T <: Number, S <: Number}
+function ARSProposal(abscissa :: Array{Float64, 1}, targetlogmpdf :: Function, lower :: Float64, upper :: Float64) :: ARSProposal
     ordinate = map(targetlogmpdf, abscissa)
     if proposalInputsAreInvalid(abscissa, ordinate, lower, upper)
         error("More than 3 abscissa with finite ordinate must be provided")
@@ -84,7 +84,7 @@ function ARSProposal(abscissa :: Array{T, 1}, targetlogmpdf :: Function, lower :
     end
 end
 
-function ARSProposal(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: ARSProposal where {T <: Number, S <: Number}
+function ARSProposal(abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: ARSProposal
     if proposalInputsAreInvalid(abscissa, ordinate, lower, upper)
         error("More than 3 abscissa with finite ordinate must be provided")
     else

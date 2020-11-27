@@ -5,18 +5,18 @@ end
 
 draw(d :: ARMSProposal) :: Float64 = draw(d.dist)
 
-logmpdf(d :: ARMSProposal, x :: Number) :: Float64 = logmpdf(d.dist, x)
+logmpdf(d :: ARMSProposal, x :: Float64) :: Float64 = logmpdf(d.dist, x)
 
-function update(d :: ARMSProposal, targetlogmpdf :: Function, x :: Number) :: ARMSProposal
+function update(d :: ARMSProposal, targetlogmpdf :: Function, x :: Float64) :: ARMSProposal
     i = findfirst(a -> x <= a, d.abscissa)
     newAbscissa = x > last(d.abscissa) ? push!(copy(d.abscissa), x) : insert!(copy(d.abscissa), i, x)
     newOrdinate = map(targetlogmpdf, newAbscissa)
     ARMSProposal(newAbscissa, newOrdinate, lower(d.dist), upper(d.dist))
 end
 
-isConvex(slopePrevious :: Number, slope :: Number, slopeNext :: Number) :: Bool = slopeNext <= slope && slope <= slopePrevious
+isConvex(slopePrevious :: Float64, slope :: Float64, slopeNext :: Float64) :: Bool = slopeNext <= slope && slope <= slopePrevious
 
-function ProduceARMSIntervalData(interval :: Int, abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: NamedTuple{(:lower, :upper, :intercept, :slope), Tuple{Number, Number, Number, Number}} where {T <: Number, S <: Number}
+function ProduceARMSIntervalData(interval :: Int, abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: NamedTuple{(:lower, :upper, :intercept, :slope), Tuple{Float64, Float64, Float64, Float64}}
     numAbscissa = length(abscissa)
     numIntervals = numAbscissa < 3 ? 1 + numAbscissa : 2 * (numAbscissa - 1)
     lineIdxIfConcave = ceil(Int64, interval / 2)
@@ -52,10 +52,10 @@ function ProduceARMSIntervalData(interval :: Int, abscissa :: Array{T, 1}, ordin
     end
 end
 
-function ProduceARMSProposalData(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: Array{NamedTuple{(:m, :d), Tuple{Number, BoundedLogLinear}}} where {T <: Number, S <: Number}
+function ProduceARMSProposalData(abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: Array{NamedTuple{(:m, :d), Tuple{Float64, BoundedLogLinear}}}
     numAbscissa = length(abscissa)
     numIntervals = numAbscissa < 3 ? 1 + numAbscissa : 2 * (numAbscissa - 1)
-    proposalData = Array{NamedTuple{(:m, :d), Tuple{Number, BoundedLogLinear}}}(undef, numIntervals)
+    proposalData = Array{NamedTuple{(:m, :d), Tuple{Float64, BoundedLogLinear}}}(undef, numIntervals)
     w = 0.0
     for i in 1:numIntervals
         (l, u, intercept, slope) = ProduceARMSIntervalData(i, abscissa, ordinate, lower, upper)
@@ -65,11 +65,11 @@ function ProduceARMSProposalData(abscissa :: Array{T, 1}, ordinate :: Array{S, 1
     proposalData
 end
 
-function ARMSProposalUnsafe(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: ARMSProposal where {T <: Number, S <: Number}
+function ARMSProposalUnsafe(abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: ARMSProposal
     ARMSProposal(PiecewiseLogLinearDensityProposal(ProduceARMSProposalData(abscissa, ordinate, lower, upper)), abscissa)
 end
 
-function ARMSProposal(abscissa :: Array{T, 1}, targetlogmpdf :: Function, lower :: T, upper :: T) :: ARMSProposal where {T <: Number, S <: Number}
+function ARMSProposal(abscissa :: Array{Float64, 1}, targetlogmpdf :: Function, lower :: Float64, upper :: Float64) :: ARMSProposal
     ordinate = map(targetlogmpdf, abscissa)
     if proposalInputsAreInvalid(abscissa, ordinate, lower, upper)
         error("More than 3 abscissa with finite ordinate must be provided")
@@ -78,7 +78,7 @@ function ARMSProposal(abscissa :: Array{T, 1}, targetlogmpdf :: Function, lower 
     end
 end
 
-function ARMSProposal(abscissa :: Array{T, 1}, ordinate :: Array{S, 1}, lower :: T, upper :: T) :: ARMSProposal where {T <: Number, S <: Number}
+function ARMSProposal(abscissa :: Array{Float64, 1}, ordinate :: Array{Float64, 1}, lower :: Float64, upper :: Float64) :: ARMSProposal
     if proposalInputsAreInvalid(abscissa, ordinate, lower, upper)
         error("More than 3 abscissa with finite ordinate must be provided")
     else
