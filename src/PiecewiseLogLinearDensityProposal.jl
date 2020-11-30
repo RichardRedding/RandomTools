@@ -9,15 +9,33 @@ struct PiecewiseLogLinearDensityProposal
 end
 
 function logpdf(d :: BoundedLogLinear, x :: Float64) :: Float64
-    abs(d.slope) > 0 ? x * d.slope + log(abs(d.slope)) - log(abs(exp(d.slope * d.upper) - exp(d.slope * d.lower))) : -log(d.upper - d.lower)
+    if d.slope > 0
+        d.slope * (x - d.upper) + log(abs(d.slope)) - log(1 - exp(-abs(d.slope) * (d.upper - d.lower)))
+    elseif d.slope < 0
+        d.slope * (x - d.lower) + log(abs(d.slope)) - log(1 - exp(-abs(d.slope) * (d.upper - d.lower)))
+    else
+        -log(d.upper - d.lower)
+    end
 end
 
 function quantile(d :: BoundedLogLinear, q :: Float64) :: Float64
-    abs(d.slope) > 0 ? log(q * (exp(d.slope * d.upper) - exp(d.slope * d.lower)) + exp(d.slope * d.lower)) / d.slope : d.lower + q * (d.upper - d.lower)
+    if d.slope > 0
+        d.upper + log(1 + (exp(-d.slope * (d.upper - d.lower)) - 1) * (1 - q)) / d.slope
+    elseif d.slope < 0
+        d.lower + log(1 + (exp(d.slope * (d.upper - d.lower)) - 1) * q) / d.slope        
+    else
+        d.lower + q * (d.upper - d.lower)
+    end
 end
 
 function cdf(d :: BoundedLogLinear, x :: Float64) :: Float64
-    abs(d.slope) > 0 ? (exp(d.slope * x) - exp(d.slope * d.lower)) / (exp(d.slope * d.upper) - exp(d.slope * d.lower)) : (x - d.lower) / (d.upper - d.lower)
+    if d.slope > 0
+        1 - (exp(-d.slope * (d.upper - x)) - 1) / (exp(-d.slope * (d.upper - d.lower)) - 1)
+    elseif d.slope < 0
+        (exp(d.slope * (x - d.lower)) - 1) / (exp(d.slope * (d.upper - d.lower)) - 1)
+    else
+        (x - d.lower) / (d.upper - d.lower)
+    end
 end
 
 lower(d :: PiecewiseLogLinearDensityProposal) = first(d.dist).d.lower
@@ -48,7 +66,11 @@ function logmpdf(d :: PiecewiseLogLinearDensityProposal, x :: Float64) :: Float6
         i = findIntervalInDomain(d, x)
         mi, di = d.dist[i]
         wl = i == 1 ? 0 : d.dist[i-1].m
-        logpdf(di, x) + log(mi - wl)
+        if mi == Inf
+            isfinite(wl) ? logpdf(di, x) : -Inf
+        else
+            (logpdf(di, x) + log(mi - wl))
+        end
     else
         -Inf
     end
@@ -65,7 +87,7 @@ function quantile(d :: PiecewiseLogLinearDensityProposal, q :: Float64) :: Float
         i = findIntervalInCodomain(d, q)
         mi, di = d.dist[i]
         wl = i == 1 ? 0 : d.dist[i-1].m
-        q2 = (q * last(d.dist).m - wl) / (mi - wl)
+        q2 = mi == Inf ? q : (q * last(d.dist).m - wl) / (mi - wl)
         quantile(di, q2)
     end
 end

@@ -12,9 +12,9 @@ nonConvexTargets = [
 [(0.3, Normal(-5,1)), (0.3, Normal(1,1)), (0.4, Normal(7,1))]
 ]
 
-testpdf(x :: Array{Tuple{Float64, Normal{Float64}}, 1}, y :: Number) = foldl((l, (w, d)) -> l + exp(log(w) + logpdf(d, y)), x, init = 0)
+testpdf(x :: Array{Tuple{Float64, Normal{Float64}}, 1}, y :: Number) = foldl((l, (w, d)) -> l + exp(log(w) + Distributions.logpdf(d, y)), x, init = 0)
 testlogpdf(x :: Array{Tuple{Float64, Normal{Float64}}, 1}, y :: Number) = log(testpdf(x, y))
-testcdf(x :: Array{Tuple{Float64, Normal{Float64}}, 1}, y :: Number) = foldl((l, (w, d)) -> l + w * cdf(d, y), x, init = 0)
+testcdf(x :: Array{Tuple{Float64, Normal{Float64}}, 1}, y :: Number) = foldl((l, (w, d)) -> l + w * Distributions.cdf(d, y), x, init = 0)
 
 convexSamplers = [
 (target, n) -> drawn(ARS(), ARSProposal(findAbscissa(target, -20.0, 20.0), target, -20.0, 20.0), target, 0.0, n),
@@ -34,9 +34,8 @@ convexTest = map(convexTargets) do target
         x, prop = sampler(x -> testlogpdf(target, x), n)
         map(ps) do p
             estimate = p
-            exact = testcdf(target, quantile(x, p))
+            exact = testcdf(target, Distributions.quantile(x, p))
             (abs(estimate - exact) / sqrt(exact * (1 - exact) / n)) > 2
-            #"estimate = $(p), exact = $(exact), target = $(repr(target)), sampler = $(repr(typeof(prop)))"
         end
     end
 end |> unfold
@@ -48,9 +47,8 @@ nonConvexTest = map(nonConvexTargets) do target
         x, prop = sampler(x -> testlogpdf(target, x), n)
         map(ps) do p
             estimate = p
-            exact = testcdf(target, quantile(x, p))
+            exact = testcdf(target, Distributions.quantile(x, p))
             (abs(estimate - exact) / sqrt(exact * (1 - exact) / n)) > 2
-            #"estimate = $(p), exact = $(exact), target = $(repr(target)), sampler = $(repr(typeof(prop)))"
         end
     end
 end |> unfold
